@@ -48,11 +48,12 @@ export default function Chat() {
     const { data, error } = await query;
 
     if (data) {
-      setStatistics({
+      const newStats = {
         totalRequests: data.length,
         leaveRequests: data.filter(r => r.type === 'leave').length,
         sickLeave: data.filter(r => r.type === 'sick leave').length,
-      });
+      };
+      setStatistics(newStats);
     } else if (error) {
       console.error('Error fetching statistics:', error);
     }
@@ -61,12 +62,15 @@ export default function Chat() {
   async function saveRequest(request: HRRequest) {
     const { error } = await supabase
       .from('hr_requests')
-      .insert([request])
+      .insert([request]);
     
     if (error) {
       console.error('Error saving request:', error);
       return false;
     }
+
+    // Actualizar las estadísticas desde la base de datos
+    await fetchStatistics();
     return true;
   }
 
