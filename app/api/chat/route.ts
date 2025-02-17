@@ -33,7 +33,19 @@ export async function POST(req: Request) {
          - Lesiones físicas
          - Condiciones crónicas
 
-      4. Si es una conversación general o pregunta informativa, NO incluyas el JSON.`,
+      4. Si es una conversación general o pregunta informativa, NO incluyas el JSON.
+
+      5. Cuando el usuario solicite consultar información histórica, incluye un JSON con el siguiente formato:
+
+      {
+        "action": "query",
+        "filters": {
+          "startDate": "YYYY-MM-DD",
+          "endDate": "YYYY-MM-DD",
+          "name": "nombre del empleado",
+          "type": "tipo de solicitud"
+        }
+      }`,
       max_tokens: 1024,
     });
 

@@ -6,6 +6,17 @@ import { Input } from "@/components/ui/input"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { LogOut } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
+import { 
+  BarChart, 
+  Bar, 
+  XAxis, 
+  YAxis, 
+  Tooltip, 
+  ResponsiveContainer,
+  PieChart,
+  Pie,
+  Cell
+} from 'recharts';
 
 interface HRRequest {
   name: string;
@@ -85,42 +96,67 @@ export default function Chat() {
     try {
       const response = await fetch('/api/chat', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          messages: [...messages, userMessage],
-        }),
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ messages: [...messages, userMessage] }),
       });
 
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
-      }
-
+      if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
       const data = await response.json();
       const content = data.content;
       
-      // Buscar el JSON en la respuesta
+      // Buscar JSON en la respuesta
       const jsonMatch = content.match(/\{[\s\S]*\}/);
-      
-      // Separar el texto conversacional del JSON
       const conversationalText = content.replace(jsonMatch?.[0] || '', '').trim();
       
-      // Agregar solo la respuesta conversacional
+      // Agregar respuesta conversacional inicial
       setMessages(prev => [...prev, { 
         role: 'assistant', 
         content: conversationalText 
       }]);
 
-      // Procesar el JSON si existe
+      // Procesar JSON si existe
       if (jsonMatch) {
         try {
           const parsedData = JSON.parse(jsonMatch[0]);
-          // Verificar que sea una solicitud válida
-          if (parsedData.type && parsedData.type !== 'N/A') {
-            const isRequest = await saveRequest(parsedData);
-            if (isRequest) {
-              fetchStatistics();
+          
+          if (parsedData.action === 'query') {
+            // Consulta histórica
+            let query = supabase
+              .from('hr_requests')
+              .select('*');
+
+            if (parsedData.filters.startDate && parsedData.filters.endDate) {
+              query = query
+                .gte('date', parsedData.filters.startDate)
+                .lte('date', parsedData.filters.endDate);
+            }
+            if (parsedData.filters.name) {
+              query = query.ilike('name', `%${parsedData.filters.name}%`);
+            }
+            if (parsedData.filters.type) {
+              query = query.eq('type', parsedData.filters.type);
+            }
+
+            const { data: queryResults, error } = await query;
+
+            if (error) {
+              throw error;
+            }
+
+            if (queryResults) {
+              const formattedResults = formatQueryResults(queryResults);
+              setMessages(prev => [...prev, { 
+                role: 'assistant', 
+                content: formattedResults 
+              }]);
+            }
+          } else {
+            // Procesar solicitud formal (código existente)
+            if (parsedData.type && parsedData.type !== 'N/A') {
+              const isRequest = await saveRequest(parsedData);
+              if (isRequest) {
+                fetchStatistics();
+              }
             }
           }
         } catch (parseError) {
@@ -134,6 +170,36 @@ export default function Chat() {
         content: 'Lo siento, hubo un error al procesar tu solicitud. Por favor, inténtalo de nuevo.' 
       }]);
     }
+  };
+
+  function formatQueryResults(data: { 
+    name: string; 
+    type: string; 
+    date: string; 
+    reason: string; 
+    duration: string 
+  }[]) {
+    if (data.length === 0) {
+      return 'No se encontraron registros con los criterios especificados.';
+    }
+
+    const resultsByPerson = data.reduce((acc: { 
+      [key: string]: { name: string; type: string; date: string; reason: string; duration: string }[] 
+    }, item) => {
+      acc[item.name] = acc[item.name] || [];
+      acc[item.name].push(item);
+      return acc;
+    }, {});
+
+    return Object.entries(resultsByPerson)
+      .map(([name, requests]) => {
+        const summary = requests.map(req => 
+          `- ${req.type === 'sick leave' ? 'Incapacidad' : 'Permiso'} (${req.duration}) el ${req.date}: ${req.reason}`
+        ).join('\n');
+        
+        return `Registros para ${name}:\n${summary}`;
+      })
+      .join('\n\n');
   }
 
   // Ejemplo de cómo llamar la función para febrero
@@ -166,6 +232,9 @@ export default function Chat() {
 
     checkData();
   }, []);
+
+  // Agregar estos colores para el gráfico
+  const COLORS = ['#0088FE', '#00C49F', '#FFBB28'];
 
   return (
     <div className="min-h-screen bg-background">
@@ -250,10 +319,100 @@ export default function Chat() {
               <CardHeader>
                 <CardTitle>Análisis</CardTitle>
               </CardHeader>
-              <CardContent>
-                <p className="text-sm text-muted-foreground">
-                  Sistema de análisis en modo básico - reportes detallados no disponibles.
-                </p>
+              <CardContent className="space-y-4">
+                {/* Gráfico de Barras */}
+                <div className="h-[200px] w-full">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <BarChart
+                      data={[
+                        {
+                          name: 'Solicitudes',
+                          Permisos: statistics.leaveRequests,
+                          Incapacidades: statistics.sickLeave,
+                        }
+                      ]}
+                      margin={{ top: 20, right: 30, left: 20, bottom: 20 }}
+                    >
+                      <XAxis dataKey="name" />
+                      <YAxis />
+                      <Tooltip />
+                      <Bar 
+                        dataKey="Permisos" 
+                        fill="#0088FE" 
+                        name="Permisos"
+                        label={{ position: 'top' }}
+                      />
+                      <Bar 
+                        dataKey="Incapacidades" 
+                        fill="#00C49F" 
+                        name="Incapacidades"
+                        label={{ position: 'top' }}
+                      />
+                    </BarChart>
+                  </ResponsiveContainer>
+                </div>
+
+                {/* Gráfico Circular */}
+                <div className="h-[200px] w-full mt-4">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <PieChart>
+                      <Pie
+                        data={[
+                          { 
+                            name: 'Permisos', 
+                            value: statistics.leaveRequests,
+                            percentage: statistics.totalRequests > 0 
+                              ? (statistics.leaveRequests / statistics.totalRequests) * 100 
+                              : 0
+                          },
+                          { 
+                            name: 'Incapacidades', 
+                            value: statistics.sickLeave,
+                            percentage: statistics.totalRequests > 0 
+                              ? (statistics.sickLeave / statistics.totalRequests) * 100 
+                              : 0
+                          },
+                        ]}
+                        cx="50%"
+                        cy="50%"
+                        innerRadius={30}
+                        outerRadius={60}
+                        paddingAngle={5}
+                        dataKey="value"
+                        nameKey="name"
+                        label={({ percent }) => 
+                          `${(percent * 100).toFixed(0)}%`
+                        }
+                        labelLine={false}
+                      >
+                        {[statistics.leaveRequests, statistics.sickLeave].map((_, index) => (
+                          <Cell key={`cell-${index}`} fill={COLORS[index]} />
+                        ))}
+                      </Pie>
+                      <Tooltip 
+                        formatter={(value, name) => [
+                          `${value} ${name} (${statistics.totalRequests > 0 
+                            ? ((Number(value) / statistics.totalRequests) * 100).toFixed(0) 
+                            : 0}%)`,
+                        ]}
+                      />
+                    </PieChart>
+                  </ResponsiveContainer>
+                </div>
+
+                <div className="text-sm text-muted-foreground mt-4 text-center">
+                  <p className="font-medium">Distribución de solicitudes por tipo</p>
+                  <div className="flex justify-center gap-4 mt-2">
+                    <span className="flex items-center">
+                      <span className="w-3 h-3 rounded-full bg-[#0088FE] mr-2"></span>
+                      Permisos
+                    </span>
+                    <span className="flex items-center">
+                      <span className="w-3 h-3 rounded-full bg-[#00C49F] mr-2"></span>
+                      Incapacidades
+                    </span>
+                  </div>
+                </div>
               </CardContent>
             </Card>
           </div>
