@@ -17,6 +17,7 @@ import {
   Pie,
   Cell
 } from 'recharts';
+import ReportGenerator from '@/app/components/ReportGenerator'
 
 interface HRRequest {
   name: string;
@@ -34,6 +35,7 @@ export default function Chat() {
     leaveRequests: 0,
     sickLeave: 0,
   })
+  const [showReports, setShowReports] = useState(false)
 
   useEffect(() => {
     fetchStatistics()
@@ -243,6 +245,13 @@ export default function Chat() {
         <div className="flex h-16 items-center px-4 container mx-auto">
           <h1 className="text-xl font-semibold">Asistente de RRHH</h1>
           <div className="ml-auto flex items-center space-x-4">
+            <Button 
+              variant="ghost" 
+              size="sm"
+              onClick={() => setShowReports(!showReports)}
+            >
+              {showReports ? 'Volver al Chat' : 'Reportes'}
+            </Button>
             <span className="text-sm text-muted-foreground">
               Bienvenido, andreszapataq
             </span>
@@ -256,167 +265,171 @@ export default function Chat() {
 
       {/* Main Content */}
       <div className="container mx-auto py-4">
-        <div className="grid grid-cols-1 md:grid-cols-[1fr,300px] gap-4">
-          {/* Chat Area */}
-          <div className="flex flex-col h-[calc(100vh-8rem)]">
-            <div className="flex-1 overflow-y-auto mb-4 p-4 rounded-lg border">
-              {messages.map((message, index) => (
-                <div
-                  key={index}
-                  className={`mb-4 ${
-                    message.role === 'user' ? 'text-right' : 'text-left'
-                  }`}
-                >
-                  <span
-                    className={`inline-block p-2 rounded-lg ${
-                      message.role === 'user'
-                        ? 'bg-primary text-primary-foreground'
-                        : 'bg-muted'
+        {showReports ? (
+          <ReportGenerator />
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-[1fr,300px] gap-4">
+            {/* Chat Area */}
+            <div className="flex flex-col h-[calc(100vh-8rem)]">
+              <div className="flex-1 overflow-y-auto mb-4 p-4 rounded-lg border">
+                {messages.map((message, index) => (
+                  <div
+                    key={index}
+                    className={`mb-4 ${
+                      message.role === 'user' ? 'text-right' : 'text-left'
                     }`}
                   >
-                    {message.content}
-                  </span>
-                </div>
-              ))}
-            </div>
-            <form onSubmit={handleSubmit} className="flex gap-2">
-              <Input
-                value={input}
-                onChange={(e) => setInput(e.target.value)}
-                placeholder="Escribe tu mensaje"
-                className="flex-1"
-              />
-              <Button type="submit" size="icon">
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  viewBox="0 0 16 16"
-                  fill="none"
-                  className="h-4 w-4"
-                >
-                  <path
-                    d="M.5 1.163A1 1 0 0 1 1.97.28l12.868 6.837a1 1 0 0 1 0 1.766L1.969 15.72A1 1 0 0 1 .5 14.836V10.33a1 1 0 0 1 .816-.983L8.5 8 1.316 6.653A1 1 0 0 1 .5 5.67V1.163Z"
-                    fill="currentColor"
-                  />
-                </svg>
-              </Button>
-            </form>
-          </div>
-
-          {/* Sidebar */}
-          <div className="space-y-4">
-            <Card>
-              <CardHeader>
-                <CardTitle>Estadísticas de Ausencias</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <p>Solicitudes totales: {statistics.totalRequests}</p>
-                <p>Permisos: {statistics.leaveRequests}</p>
-                <p>Incapacidades: {statistics.sickLeave}</p>
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardHeader>
-                <CardTitle>Análisis</CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                {/* Gráfico de Barras */}
-                <div className="h-[200px] w-full">
-                  <ResponsiveContainer width="100%" height="100%">
-                    <BarChart
-                      data={[
-                        {
-                          name: 'Solicitudes',
-                          Permisos: statistics.leaveRequests,
-                          Incapacidades: statistics.sickLeave,
-                        }
-                      ]}
-                      margin={{ top: 20, right: 30, left: 20, bottom: 20 }}
+                    <span
+                      className={`inline-block p-2 rounded-lg ${
+                        message.role === 'user'
+                          ? 'bg-primary text-primary-foreground'
+                          : 'bg-muted'
+                      }`}
                     >
-                      <XAxis dataKey="name" />
-                      <YAxis />
-                      <Tooltip />
-                      <Bar 
-                        dataKey="Permisos" 
-                        fill="#0088FE" 
-                        name="Permisos"
-                        label={{ position: 'top' }}
-                      />
-                      <Bar 
-                        dataKey="Incapacidades" 
-                        fill="#00C49F" 
-                        name="Incapacidades"
-                        label={{ position: 'top' }}
-                      />
-                    </BarChart>
-                  </ResponsiveContainer>
-                </div>
-
-                {/* Gráfico Circular */}
-                <div className="h-[200px] w-full mt-4">
-                  <ResponsiveContainer width="100%" height="100%">
-                    <PieChart>
-                      <Pie
-                        data={[
-                          { 
-                            name: 'Permisos', 
-                            value: statistics.leaveRequests,
-                            percentage: statistics.totalRequests > 0 
-                              ? (statistics.leaveRequests / statistics.totalRequests) * 100 
-                              : 0
-                          },
-                          { 
-                            name: 'Incapacidades', 
-                            value: statistics.sickLeave,
-                            percentage: statistics.totalRequests > 0 
-                              ? (statistics.sickLeave / statistics.totalRequests) * 100 
-                              : 0
-                          },
-                        ]}
-                        cx="50%"
-                        cy="50%"
-                        innerRadius={30}
-                        outerRadius={60}
-                        paddingAngle={5}
-                        dataKey="value"
-                        nameKey="name"
-                        label={({ percent }) => 
-                          `${(percent * 100).toFixed(0)}%`
-                        }
-                        labelLine={false}
-                      >
-                        {[statistics.leaveRequests, statistics.sickLeave].map((_, index) => (
-                          <Cell key={`cell-${index}`} fill={COLORS[index]} />
-                        ))}
-                      </Pie>
-                      <Tooltip 
-                        formatter={(value, name) => [
-                          `${value} ${name} (${statistics.totalRequests > 0 
-                            ? ((Number(value) / statistics.totalRequests) * 100).toFixed(0) 
-                            : 0}%)`,
-                        ]}
-                      />
-                    </PieChart>
-                  </ResponsiveContainer>
-                </div>
-
-                <div className="text-sm text-muted-foreground mt-4 text-center">
-                  <p className="font-medium">Distribución de solicitudes por tipo</p>
-                  <div className="flex justify-center gap-4 mt-2">
-                    <span className="flex items-center">
-                      <span className="w-3 h-3 rounded-full bg-[#0088FE] mr-2"></span>
-                      Permisos
-                    </span>
-                    <span className="flex items-center">
-                      <span className="w-3 h-3 rounded-full bg-[#00C49F] mr-2"></span>
-                      Incapacidades
+                      {message.content}
                     </span>
                   </div>
-                </div>
-              </CardContent>
-            </Card>
+                ))}
+              </div>
+              <form onSubmit={handleSubmit} className="flex gap-2">
+                <Input
+                  value={input}
+                  onChange={(e) => setInput(e.target.value)}
+                  placeholder="Escribe tu mensaje"
+                  className="flex-1"
+                />
+                <Button type="submit" size="icon">
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    viewBox="0 0 16 16"
+                    fill="none"
+                    className="h-4 w-4"
+                  >
+                    <path
+                      d="M.5 1.163A1 1 0 0 1 1.97.28l12.868 6.837a1 1 0 0 1 0 1.766L1.969 15.72A1 1 0 0 1 .5 14.836V10.33a1 1 0 0 1 .816-.983L8.5 8 1.316 6.653A1 1 0 0 1 .5 5.67V1.163Z"
+                      fill="currentColor"
+                    />
+                  </svg>
+                </Button>
+              </form>
+            </div>
+
+            {/* Sidebar */}
+            <div className="space-y-4">
+              <Card>
+                <CardHeader>
+                  <CardTitle>Estadísticas de Ausencias</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <p>Solicitudes totales: {statistics.totalRequests}</p>
+                  <p>Permisos: {statistics.leaveRequests}</p>
+                  <p>Incapacidades: {statistics.sickLeave}</p>
+                </CardContent>
+              </Card>
+
+              <Card>
+                <CardHeader>
+                  <CardTitle>Análisis</CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  {/* Gráfico de Barras */}
+                  <div className="h-[200px] w-full">
+                    <ResponsiveContainer width="100%" height="100%">
+                      <BarChart
+                        data={[
+                          {
+                            name: 'Solicitudes',
+                            Permisos: statistics.leaveRequests,
+                            Incapacidades: statistics.sickLeave,
+                          }
+                        ]}
+                        margin={{ top: 20, right: 30, left: 20, bottom: 20 }}
+                      >
+                        <XAxis dataKey="name" />
+                        <YAxis />
+                        <Tooltip />
+                        <Bar 
+                          dataKey="Permisos" 
+                          fill="#0088FE" 
+                          name="Permisos"
+                          label={{ position: 'top' }}
+                        />
+                        <Bar 
+                          dataKey="Incapacidades" 
+                          fill="#00C49F" 
+                          name="Incapacidades"
+                          label={{ position: 'top' }}
+                        />
+                      </BarChart>
+                    </ResponsiveContainer>
+                  </div>
+
+                  {/* Gráfico Circular */}
+                  <div className="h-[200px] w-full mt-4">
+                    <ResponsiveContainer width="100%" height="100%">
+                      <PieChart>
+                        <Pie
+                          data={[
+                            { 
+                              name: 'Permisos', 
+                              value: statistics.leaveRequests,
+                              percentage: statistics.totalRequests > 0 
+                                ? (statistics.leaveRequests / statistics.totalRequests) * 100 
+                                : 0
+                            },
+                            { 
+                              name: 'Incapacidades', 
+                              value: statistics.sickLeave,
+                              percentage: statistics.totalRequests > 0 
+                                ? (statistics.sickLeave / statistics.totalRequests) * 100 
+                                : 0
+                            },
+                          ]}
+                          cx="50%"
+                          cy="50%"
+                          innerRadius={30}
+                          outerRadius={60}
+                          paddingAngle={5}
+                          dataKey="value"
+                          nameKey="name"
+                          label={({ percent }) => 
+                            `${(percent * 100).toFixed(0)}%`
+                          }
+                          labelLine={false}
+                        >
+                          {[statistics.leaveRequests, statistics.sickLeave].map((_, index) => (
+                            <Cell key={`cell-${index}`} fill={COLORS[index]} />
+                          ))}
+                        </Pie>
+                        <Tooltip 
+                          formatter={(value, name) => [
+                            `${value} ${name} (${statistics.totalRequests > 0 
+                              ? ((Number(value) / statistics.totalRequests) * 100).toFixed(0) 
+                              : 0}%)`,
+                          ]}
+                        />
+                      </PieChart>
+                    </ResponsiveContainer>
+                  </div>
+
+                  <div className="text-sm text-muted-foreground mt-4 text-center">
+                    <p className="font-medium">Distribución de solicitudes por tipo</p>
+                    <div className="flex justify-center gap-4 mt-2">
+                      <span className="flex items-center">
+                        <span className="w-3 h-3 rounded-full bg-[#0088FE] mr-2"></span>
+                        Permisos
+                      </span>
+                      <span className="flex items-center">
+                        <span className="w-3 h-3 rounded-full bg-[#00C49F] mr-2"></span>
+                        Incapacidades
+                      </span>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
           </div>
-        </div>
+        )}
       </div>
     </div>
   )

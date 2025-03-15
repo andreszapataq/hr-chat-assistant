@@ -11,7 +11,7 @@ export async function POST(req: Request) {
     });
 
     const response = await anthropicClient.messages.create({
-      model: 'claude-3-5-sonnet-20241022',
+      model: 'claude-3-7-sonnet-20250219',
       messages,
       system: `Eres un asistente de RRHH amigable y servicial. Sigue estas reglas estrictamente:
 
