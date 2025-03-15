@@ -13,7 +13,7 @@ import {
 import { supabase } from '@/lib/supabase'
 import { jsPDF } from 'jspdf'
 import html2canvas from 'html2canvas'
-import { FileDown } from 'lucide-react'
+import { FileDown, Calendar, Users, Filter, Search, Download } from 'lucide-react'
 
 interface HRRequest {
   name: string;
@@ -188,18 +188,31 @@ export default function ReportGenerator() {
     return `Reporte de ${typeText}`;
   }
 
+  // Formatear fecha para mostrar
+  const formatDate = (dateString: string) => {
+    const date = new Date(dateString);
+    return date.toLocaleDateString('es-ES', {
+      day: '2-digit',
+      month: '2-digit',
+      year: 'numeric'
+    });
+  };
+
   return (
-    <div className="space-y-4">
-      <Card>
-        <CardHeader>
-          <CardTitle>Generador de Reportes</CardTitle>
+    <div className="space-y-6">
+      <Card className="border-0 shadow-sm bg-white">
+        <CardHeader className="pb-2 border-b">
+          <CardTitle className="text-xl font-semibold text-primary">Generador de Reportes</CardTitle>
         </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <CardContent className="p-6">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
             <div className="space-y-2">
-              <label className="text-sm font-medium">Mes</label>
+              <label className="text-sm font-medium flex items-center gap-2 text-gray-700">
+                <Calendar className="h-4 w-4 text-primary" />
+                Mes
+              </label>
               <Select value={month} onValueChange={setMonth}>
-                <SelectTrigger>
+                <SelectTrigger className="rounded-lg border-gray-200 bg-white hover:bg-gray-50 transition-colors">
                   <SelectValue placeholder="Selecciona un mes" />
                 </SelectTrigger>
                 <SelectContent>
@@ -213,9 +226,12 @@ export default function ReportGenerator() {
             </div>
             
             <div className="space-y-2">
-              <label className="text-sm font-medium">Tipo de solicitud</label>
+              <label className="text-sm font-medium flex items-center gap-2 text-gray-700">
+                <Filter className="h-4 w-4 text-primary" />
+                Tipo de solicitud
+              </label>
               <Select value={type} onValueChange={setType}>
-                <SelectTrigger>
+                <SelectTrigger className="rounded-lg border-gray-200 bg-white hover:bg-gray-50 transition-colors">
                   <SelectValue placeholder="Todos los tipos" />
                 </SelectTrigger>
                 <SelectContent>
@@ -229,9 +245,12 @@ export default function ReportGenerator() {
             </div>
             
             <div className="space-y-2">
-              <label className="text-sm font-medium">Empleado</label>
+              <label className="text-sm font-medium flex items-center gap-2 text-gray-700">
+                <Users className="h-4 w-4 text-primary" />
+                Empleado
+              </label>
               <Select value={employee} onValueChange={setEmployee}>
-                <SelectTrigger>
+                <SelectTrigger className="rounded-lg border-gray-200 bg-white hover:bg-gray-50 transition-colors">
                   <SelectValue placeholder="Todos los empleados" />
                 </SelectTrigger>
                 <SelectContent>
@@ -245,11 +264,13 @@ export default function ReportGenerator() {
             </div>
           </div>
           
-          <div className="flex justify-end space-x-2">
+          <div className="flex justify-end space-x-3">
             <Button 
               onClick={generateReport} 
               disabled={loading}
+              className="rounded-lg bg-primary hover:bg-primary/90 text-white flex items-center gap-2"
             >
+              <Search className="h-4 w-4" />
               Generar Reporte
             </Button>
             
@@ -257,21 +278,22 @@ export default function ReportGenerator() {
               variant="outline" 
               onClick={exportToPDF} 
               disabled={reportData.length === 0 || loading}
+              className="rounded-lg border-gray-200 text-primary hover:bg-primary/5 flex items-center gap-2"
             >
-              <FileDown className="h-4 w-4 mr-2" />
+              <Download className="h-4 w-4" />
               Exportar a PDF
             </Button>
           </div>
         </CardContent>
       </Card>
       
-      {reportData.length > 0 && (
-        <div ref={reportRef} className="bg-white p-6 rounded-lg border">
-          <div className="text-center mb-6">
-            <h2 className="text-2xl font-bold">
+      {reportData.length > 0 ? (
+        <div ref={reportRef} className="bg-white p-8 rounded-xl shadow-sm border border-gray-100">
+          <div className="text-center mb-8">
+            <h2 className="text-2xl font-bold text-gray-800">
               {getReportTitle()}
             </h2>
-            <p className="text-muted-foreground">
+            <p className="text-gray-500 mt-1">
               {month !== 'all' 
                 ? months.find(m => m.value === month)?.label 
                 : 'Todos los meses'}
@@ -279,41 +301,55 @@ export default function ReportGenerator() {
             </p>
           </div>
           
-          <table className="w-full border-collapse">
-            <thead>
-              <tr className="bg-muted">
-                <th className="border p-2 text-left">Empleado</th>
-                <th className="border p-2 text-left">Tipo</th>
-                <th className="border p-2 text-left">Fecha</th>
-                <th className="border p-2 text-left">Duración</th>
-                <th className="border p-2 text-left">Motivo</th>
-              </tr>
-            </thead>
-            <tbody>
-              {reportData.map((request, index) => (
-                <tr key={index} className={index % 2 === 0 ? 'bg-white' : 'bg-muted/30'}>
-                  <td className="border p-2">{request.name}</td>
-                  <td className="border p-2">
-                    {request.type === 'sick leave' ? 'Incapacidad' : 'Permiso'}
-                  </td>
-                  <td className="border p-2">{request.date}</td>
-                  <td className="border p-2">{request.duration}</td>
-                  <td className="border p-2">{request.reason}</td>
+          <div className="overflow-hidden rounded-lg border border-gray-200 mb-8">
+            <table className="w-full border-collapse">
+              <thead>
+                <tr className="bg-gray-50">
+                  <th className="border-b p-3 text-left text-sm font-semibold text-gray-700">Empleado</th>
+                  <th className="border-b p-3 text-left text-sm font-semibold text-gray-700">Tipo</th>
+                  <th className="border-b p-3 text-left text-sm font-semibold text-gray-700">Fecha</th>
+                  <th className="border-b p-3 text-left text-sm font-semibold text-gray-700">Duración</th>
+                  <th className="border-b p-3 text-left text-sm font-semibold text-gray-700">Motivo</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
+              </thead>
+              <tbody>
+                {reportData.map((request, index) => (
+                  <tr key={index} className={index % 2 === 0 ? 'bg-white' : 'bg-gray-50'}>
+                    <td className="border-b p-3 text-sm text-gray-700">{request.name}</td>
+                    <td className="border-b p-3 text-sm">
+                      <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                        request.type === 'sick leave' 
+                          ? 'bg-[#00C49F]/10 text-[#00C49F]' 
+                          : 'bg-[#0088FE]/10 text-[#0088FE]'
+                      }`}>
+                        {request.type === 'sick leave' ? 'Incapacidad' : 'Permiso'}
+                      </span>
+                    </td>
+                    <td className="border-b p-3 text-sm text-gray-700">{formatDate(request.date)}</td>
+                    <td className="border-b p-3 text-sm text-gray-700">{request.duration}</td>
+                    <td className="border-b p-3 text-sm text-gray-700">{request.reason}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
           
-          <div className="mt-6">
-            <h3 className="text-lg font-semibold mb-2">Resumen por Empleado</h3>
+          <div className="mt-8 space-y-6">
+            <h3 className="text-lg font-semibold text-gray-800 border-b pb-2">Resumen por Empleado</h3>
             {Object.entries(groupedData).map(([name, requests]) => (
-              <div key={name} className="mb-4">
-                <h4 className="font-medium">{name}</h4>
-                <ul className="list-disc pl-5">
+              <div key={name} className="mb-6 bg-gray-50 p-4 rounded-lg">
+                <h4 className="font-medium text-gray-800 mb-2">{name}</h4>
+                <ul className="space-y-2 pl-5">
                   {requests.map((req, idx) => (
-                    <li key={idx}>
-                      {req.type === 'sick leave' ? 'Incapacidad' : 'Permiso'} ({req.duration}) 
-                      el {req.date}: {req.reason}
+                    <li key={idx} className="text-sm text-gray-700">
+                      <span className={`inline-flex items-center mr-2 px-2 py-0.5 rounded-full text-xs font-medium ${
+                        req.type === 'sick leave' 
+                          ? 'bg-[#00C49F]/10 text-[#00C49F]' 
+                          : 'bg-[#0088FE]/10 text-[#0088FE]'
+                      }`}>
+                        {req.type === 'sick leave' ? 'Incapacidad' : 'Permiso'}
+                      </span>
+                      <span>({req.duration}) el {formatDate(req.date)}: {req.reason}</span>
                     </li>
                   ))}
                 </ul>
@@ -321,9 +357,21 @@ export default function ReportGenerator() {
             ))}
           </div>
           
-          <div className="mt-6 text-sm text-muted-foreground text-right">
-            <p>Total de solicitudes: {reportData.length}</p>
-            <p>Reporte generado: {new Date().toLocaleDateString()}</p>
+          <div className="mt-8 text-sm text-gray-500 text-right border-t pt-4">
+            <p>Total de solicitudes: <span className="font-medium text-gray-700">{reportData.length}</span></p>
+            <p>Reporte generado: <span className="font-medium text-gray-700">{new Date().toLocaleDateString()}</span></p>
+          </div>
+        </div>
+      ) : (
+        <div className="bg-white p-8 rounded-xl shadow-sm border border-gray-100 text-center">
+          <div className="flex flex-col items-center justify-center py-12 text-center text-gray-400 space-y-3">
+            <div className="w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center">
+              <FileDown className="h-8 w-8 text-primary" />
+            </div>
+            <p className="text-lg font-medium text-gray-700">No hay datos para mostrar</p>
+            <p className="max-w-md text-sm text-gray-500">
+              Selecciona los filtros y haz clic en &quot;Generar Reporte&quot; para ver los resultados.
+            </p>
           </div>
         </div>
       )}

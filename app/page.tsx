@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react'
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { LogOut } from 'lucide-react'
+import { LogOut, Send, FileText, User } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
 import { 
   BarChart, 
@@ -206,7 +206,7 @@ export default function Chat() {
 
   // Ejemplo de cómo llamar la función para febrero
   useEffect(() => {
-    fetchStatistics('2024-02', 'sick leave');
+    fetchStatistics('2025-02', 'sick leave');
   }, []);
 
   useEffect(() => {
@@ -216,8 +216,8 @@ export default function Chat() {
         .from('hr_requests')
         .select('*')
         .eq('type', 'sick leave')
-        .gte('date', '2024-02-01')
-        .lte('date', '2024-02-29');
+        .gte('date', '2025-02-01')
+        .lte('date', '2025-02-29');
 
       if (error) {
         console.error('Error de conexión:', error);
@@ -239,23 +239,25 @@ export default function Chat() {
   const COLORS = ['#0088FE', '#00C49F', '#FFBB28'];
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-background font-sans">
       {/* Navigation */}
-      <nav className="border-b">
+      <nav className="border-b bg-white shadow-sm">
         <div className="flex h-16 items-center px-4 container mx-auto">
-          <h1 className="text-xl font-semibold">Asistente de RRHH</h1>
+          <h1 className="text-xl font-semibold text-primary">AsistenteRH</h1>
           <div className="ml-auto flex items-center space-x-4">
             <Button 
               variant="ghost" 
               size="sm"
               onClick={() => setShowReports(!showReports)}
+              className="flex items-center gap-2 text-primary hover:text-primary/80"
             >
-              {showReports ? 'Volver al Chat' : 'Reportes'}
+              {showReports ? 'Volver al Chat' : <><FileText className="h-4 w-4" /> Reportes</>}
             </Button>
-            <span className="text-sm text-muted-foreground">
-              Bienvenido, andreszapataq
-            </span>
-            <Button variant="ghost" size="sm">
+            <div className="flex items-center gap-2 text-sm text-muted-foreground">
+              <User className="h-4 w-4" />
+              <span>andreszapataq</span>
+            </div>
+            <Button variant="ghost" size="sm" className="text-gray-500 hover:text-gray-700">
               <LogOut className="h-4 w-4 mr-2" />
               Cerrar sesión
             </Button>
@@ -264,76 +266,94 @@ export default function Chat() {
       </nav>
 
       {/* Main Content */}
-      <div className="container mx-auto py-4">
+      <div className="container mx-auto py-6">
         {showReports ? (
           <ReportGenerator />
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-[1fr,300px] gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-[1fr,320px] gap-6">
             {/* Chat Area */}
-            <div className="flex flex-col h-[calc(100vh-8rem)]">
-              <div className="flex-1 overflow-y-auto mb-4 p-4 rounded-lg border">
+            <div className="flex flex-col h-[calc(100vh-8rem)] bg-white rounded-xl shadow-sm border border-gray-100">
+              <div className="flex-1 overflow-y-auto p-6 space-y-6">
+                {messages.length === 0 && (
+                  <div className="flex flex-col items-center justify-center h-full text-center text-gray-400 space-y-3">
+                    <div className="w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center">
+                      <User className="h-8 w-8 text-primary" />
+                    </div>
+                    <p className="text-lg font-medium">Bienvenido al Asistente de RRHH</p>
+                    <p className="max-w-md text-sm">
+                      Puedes consultar información sobre permisos e incapacidades, o solicitar un nuevo permiso.
+                    </p>
+                  </div>
+                )}
+                
                 {messages.map((message, index) => (
                   <div
                     key={index}
-                    className={`mb-4 ${
-                      message.role === 'user' ? 'text-right' : 'text-left'
+                    className={`flex ${
+                      message.role === 'user' ? 'justify-end' : 'justify-start'
                     }`}
                   >
-                    <span
-                      className={`inline-block p-2 rounded-lg ${
+                    <div
+                      className={`max-w-[80%] rounded-2xl px-4 py-3 ${
                         message.role === 'user'
-                          ? 'bg-primary text-primary-foreground'
-                          : 'bg-muted'
+                          ? 'bg-primary text-white rounded-tr-none'
+                          : 'bg-gray-100 text-gray-800 rounded-tl-none'
                       }`}
                     >
-                      {message.content}
-                    </span>
+                      <div className="whitespace-pre-wrap text-sm">
+                        {message.content}
+                      </div>
+                    </div>
                   </div>
                 ))}
               </div>
-              <form onSubmit={handleSubmit} className="flex gap-2">
-                <Input
-                  value={input}
-                  onChange={(e) => setInput(e.target.value)}
-                  placeholder="Escribe tu mensaje"
-                  className="flex-1"
-                />
-                <Button type="submit" size="icon">
-                  <svg
-                    xmlns="http://www.w3.org/2000/svg"
-                    viewBox="0 0 16 16"
-                    fill="none"
-                    className="h-4 w-4"
-                  >
-                    <path
-                      d="M.5 1.163A1 1 0 0 1 1.97.28l12.868 6.837a1 1 0 0 1 0 1.766L1.969 15.72A1 1 0 0 1 .5 14.836V10.33a1 1 0 0 1 .816-.983L8.5 8 1.316 6.653A1 1 0 0 1 .5 5.67V1.163Z"
-                      fill="currentColor"
-                    />
-                  </svg>
-                </Button>
-              </form>
+              
+              <div className="p-4 border-t">
+                <form onSubmit={handleSubmit} className="flex gap-2">
+                  <Input
+                    value={input}
+                    onChange={(e) => setInput(e.target.value)}
+                    placeholder="Escribe tu mensaje..."
+                    className="flex-1 rounded-full bg-gray-100 border-0 focus-visible:ring-primary"
+                  />
+                  <Button type="submit" size="icon" className="rounded-full bg-primary hover:bg-primary/90">
+                    <Send className="h-4 w-4" />
+                  </Button>
+                </form>
+              </div>
             </div>
 
             {/* Sidebar */}
-            <div className="space-y-4">
-              <Card>
-                <CardHeader>
-                  <CardTitle>Estadísticas de Ausencias</CardTitle>
+            <div className="space-y-6">
+              <Card className="border-0 shadow-sm">
+                <CardHeader className="pb-2">
+                  <CardTitle className="text-lg font-medium">Estadísticas de Ausencias</CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <p>Solicitudes totales: {statistics.totalRequests}</p>
-                  <p>Permisos: {statistics.leaveRequests}</p>
-                  <p>Incapacidades: {statistics.sickLeave}</p>
+                  <div className="space-y-2">
+                    <div className="flex justify-between items-center">
+                      <span className="text-sm text-gray-500">Solicitudes totales</span>
+                      <span className="font-medium">{statistics.totalRequests}</span>
+                    </div>
+                    <div className="flex justify-between items-center">
+                      <span className="text-sm text-gray-500">Permisos</span>
+                      <span className="font-medium text-[#0088FE]">{statistics.leaveRequests}</span>
+                    </div>
+                    <div className="flex justify-between items-center">
+                      <span className="text-sm text-gray-500">Incapacidades</span>
+                      <span className="font-medium text-[#00C49F]">{statistics.sickLeave}</span>
+                    </div>
+                  </div>
                 </CardContent>
               </Card>
 
-              <Card>
-                <CardHeader>
-                  <CardTitle>Análisis</CardTitle>
+              <Card className="border-0 shadow-sm">
+                <CardHeader className="pb-2">
+                  <CardTitle className="text-lg font-medium">Análisis</CardTitle>
                 </CardHeader>
-                <CardContent className="space-y-4">
+                <CardContent className="space-y-6">
                   {/* Gráfico de Barras */}
-                  <div className="h-[200px] w-full">
+                  <div className="h-[180px] w-full">
                     <ResponsiveContainer width="100%" height="100%">
                       <BarChart
                         data={[
@@ -343,7 +363,7 @@ export default function Chat() {
                             Incapacidades: statistics.sickLeave,
                           }
                         ]}
-                        margin={{ top: 20, right: 30, left: 20, bottom: 20 }}
+                        margin={{ top: 20, right: 10, left: 0, bottom: 20 }}
                       >
                         <XAxis dataKey="name" />
                         <YAxis />
@@ -352,20 +372,22 @@ export default function Chat() {
                           dataKey="Permisos" 
                           fill="#0088FE" 
                           name="Permisos"
-                          label={{ position: 'top' }}
+                          label={{ position: 'top', fill: '#0088FE', fontSize: 12 }}
+                          radius={[4, 4, 0, 0]}
                         />
                         <Bar 
                           dataKey="Incapacidades" 
                           fill="#00C49F" 
                           name="Incapacidades"
-                          label={{ position: 'top' }}
+                          label={{ position: 'top', fill: '#00C49F', fontSize: 12 }}
+                          radius={[4, 4, 0, 0]}
                         />
                       </BarChart>
                     </ResponsiveContainer>
                   </div>
 
                   {/* Gráfico Circular */}
-                  <div className="h-[200px] w-full mt-4">
+                  <div className="h-[180px] w-full">
                     <ResponsiveContainer width="100%" height="100%">
                       <PieChart>
                         <Pie
@@ -387,7 +409,7 @@ export default function Chat() {
                           ]}
                           cx="50%"
                           cy="50%"
-                          innerRadius={30}
+                          innerRadius={35}
                           outerRadius={60}
                           paddingAngle={5}
                           dataKey="value"
@@ -412,9 +434,9 @@ export default function Chat() {
                     </ResponsiveContainer>
                   </div>
 
-                  <div className="text-sm text-muted-foreground mt-4 text-center">
-                    <p className="font-medium">Distribución de solicitudes por tipo</p>
-                    <div className="flex justify-center gap-4 mt-2">
+                  <div className="text-sm text-gray-500 text-center">
+                    <p className="font-medium mb-2">Distribución de solicitudes</p>
+                    <div className="flex justify-center gap-4">
                       <span className="flex items-center">
                         <span className="w-3 h-3 rounded-full bg-[#0088FE] mr-2"></span>
                         Permisos
