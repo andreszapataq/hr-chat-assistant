@@ -102,7 +102,29 @@ export default function Chat() {
         body: JSON.stringify({ messages: [...messages, userMessage] }),
       });
 
-      if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+      if (!response.ok) {
+        // Verificar si es un error 500 o 529 (overloaded)
+        if (response.status === 500 || response.status === 529) {
+          try {
+            const errorData = await response.json();
+            // Verificar si es específicamente un error de sobrecarga
+            if (errorData && 
+                (errorData.type === 'overloaded_error' || 
+                 (errorData.error && errorData.error.includes('overloaded')))) {
+              // Error específico de sobrecarga
+              setMessages(prev => [...prev, { 
+                role: 'assistant', 
+                content: 'Lo siento, el sistema está experimentando mucha demanda en este momento. Por favor, intenta de nuevo en unos minutos.' 
+              }]);
+              return;
+            }
+          } catch {
+            // Si no podemos analizar la respuesta JSON, continuamos con el manejo general de errores
+          }
+        }
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+      
       const data = await response.json();
       const content = data.content;
       
@@ -167,10 +189,26 @@ export default function Chat() {
       }
     } catch (error) {
       console.error('Error:', error);
-      setMessages(prev => [...prev, { 
-        role: 'assistant', 
-        content: 'Lo siento, hubo un error al procesar tu solicitud. Por favor, inténtalo de nuevo.' 
-      }]);
+      // Verificar si es un error específico
+      if (error instanceof Error) {
+        const errorMessage = error.message;
+        if (errorMessage.includes('overloaded') || errorMessage.includes('529')) {
+          setMessages(prev => [...prev, { 
+            role: 'assistant', 
+            content: 'Lo siento, el servicio está experimentando una alta demanda en este momento. Por favor, intenta de nuevo en unos minutos.' 
+          }]);
+        } else {
+          setMessages(prev => [...prev, { 
+            role: 'assistant', 
+            content: 'Lo siento, hubo un error al procesar tu solicitud. Por favor, inténtalo de nuevo.' 
+          }]);
+        }
+      } else {
+        setMessages(prev => [...prev, { 
+          role: 'assistant', 
+          content: 'Lo siento, hubo un error al procesar tu solicitud. Por favor, inténtalo de nuevo.' 
+        }]);
+      }
     }
   };
 

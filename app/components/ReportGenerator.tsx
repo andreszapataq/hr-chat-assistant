@@ -190,7 +190,13 @@ export default function ReportGenerator() {
 
   // Formatear fecha para mostrar
   const formatDate = (dateString: string) => {
-    const date = new Date(dateString);
+    // Crear la fecha con la zona horaria local correcta
+    // Dividimos la fecha en componentes y creamos un objeto Date con esos valores específicos
+    const [year, month, day] = dateString.split('-').map(Number);
+    
+    // Los meses en JavaScript son 0-indexados (0-11), por lo que restamos 1 al mes
+    const date = new Date(year, month - 1, day);
+    
     return date.toLocaleDateString('es-ES', {
       day: '2-digit',
       month: '2-digit',
@@ -317,7 +323,7 @@ export default function ReportGenerator() {
                   <tr key={index} className={index % 2 === 0 ? 'bg-white' : 'bg-gray-50'}>
                     <td className="border-b p-3 text-sm text-gray-700">{request.name}</td>
                     <td className="border-b p-3 text-sm">
-                      <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                      <span className={`inline-flex items-center justify-center h-5 leading-none px-2.5 py-1 rounded-full text-xs font-medium ${
                         request.type === 'sick leave' 
                           ? 'bg-[#00C49F]/10 text-[#00C49F]' 
                           : 'bg-[#0088FE]/10 text-[#0088FE]'
@@ -342,7 +348,7 @@ export default function ReportGenerator() {
                 <ul className="space-y-2 pl-5">
                   {requests.map((req, idx) => (
                     <li key={idx} className="text-sm text-gray-700">
-                      <span className={`inline-flex items-center mr-2 px-2 py-0.5 rounded-full text-xs font-medium ${
+                      <span className={`inline-flex items-center justify-center h-5 leading-none mr-2 px-2.5 py-1 rounded-full text-xs font-medium ${
                         req.type === 'sick leave' 
                           ? 'bg-[#00C49F]/10 text-[#00C49F]' 
                           : 'bg-[#0088FE]/10 text-[#0088FE]'
